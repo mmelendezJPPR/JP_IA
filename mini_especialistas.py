@@ -65,6 +65,127 @@ RESPUESTA ESPECIALIZADA:"""
             print(f"Error en mini-especialista conservación: {e}")
             return None
 
+class MiniEspecialistaPermisos:
+    """Mini especialista para PERMISOS - Tomos 1 y 3"""
+    
+    @staticmethod
+    def es_mi_consulta(entrada):
+        """Detecta consultas sobre permisos, requisitos y trámites"""
+        entrada_lower = entrada.lower()
+        
+        # Palabras clave para permisos
+        palabras_permisos = [
+            'permiso', 'permisos', 'licencia', 'licencias',
+            'autorización', 'autorizaciones', 'certificación',
+            'tramitar', 'solicitar', 'requisitos para',
+            'documentos necesarios', 'cómo obtener',
+            'permiso de construcción', 'permiso de uso',
+            'permiso único', 'permiso de demolición',
+            'desarrollo y negocios', 'ogpe', 'sui'
+        ]
+        
+        return any(palabra in entrada_lower for palabra in palabras_permisos)
+    
+    @staticmethod
+    def procesar(entrada, tomo_1_contenido, tomo_3_contenido):
+        """Procesamiento especializado para permisos"""
+        try:
+            prompt_especializado = f"""Eres especialista en PERMISOS Y TRÁMITES de Puerto Rico.
+
+CONSULTA ESPECÍFICA: {entrada}
+
+INFORMACIÓN TOMO 1 (Sistema de Evaluación):
+{tomo_1_contenido[:1500]}
+
+INFORMACIÓN TOMO 3 (Permisos para Desarrollo):
+{tomo_3_contenido[:1500]}
+
+INSTRUCCIONES ESPECÍFICAS:
+- Explica tipos de permisos disponibles
+- Lista requisitos específicos y documentos
+- Menciona plazos de tramitación (30, 120, 180 días)
+- Incluye información sobre OGPe, SUI y municipios
+- Explica procesos paso a paso
+- Máximo 450 palabras
+
+RESPUESTA ESPECIALIZADA:"""
+
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "Especialista en permisos y trámites de desarrollo de Puerto Rico."},
+                    {"role": "user", "content": prompt_especializado}
+                ],
+                temperature=0.1,
+                max_tokens=900
+            )
+            
+            respuesta = response.choices[0].message.content.strip()
+            return f"🏗️ **ESPECIALISTA EN PERMISOS Y TRÁMITES:**\n\n{respuesta}\n\n---\n📋 *Especialista en permisos de desarrollo y negocios*"
+            
+        except Exception as e:
+            print(f"Error en mini-especialista permisos: {e}")
+            return None
+
+class MiniEspecialistaProcedimientos:
+    """Mini especialista para PROCEDIMIENTOS ADMINISTRATIVOS - Tomo 2"""
+    
+    @staticmethod
+    def es_mi_consulta(entrada):
+        """Detecta consultas sobre procedimientos administrativos"""
+        entrada_lower = entrada.lower()
+        
+        # Palabras clave para procedimientos
+        palabras_procedimientos = [
+            'procedimiento', 'procedimientos', 'proceso administrativo',
+            'notificación', 'notificaciones', 'plazo', 'plazos',
+            'vista pública', 'adjudicativo', 'determinación final',
+            'lpau', 'ley 38-2017', 'subsanación', 'requerimientos',
+            'municipios autónomos', 'jurisdicción', 'evaluación',
+            'trámite', 'solicitud', 'cómo presentar'
+        ]
+        
+        return any(palabra in entrada_lower for palabra in palabras_procedimientos)
+    
+    @staticmethod
+    def procesar(entrada, tomo_2_contenido):
+        """Procesamiento especializado para procedimientos"""
+        try:
+            prompt_especializado = f"""Eres especialista en PROCEDIMIENTOS ADMINISTRATIVOS de Puerto Rico.
+
+CONSULTA ESPECÍFICA: {entrada}
+
+INFORMACIÓN TOMO 2 (Disposiciones Generales):
+{tomo_2_contenido[:1500]}
+
+INSTRUCCIONES ESPECÍFICAS:
+- Explica procedimientos paso a paso
+- Menciona plazos específicos (5, 30 días laborables)
+- Incluye información sobre LPAU (Ley 38-2017)
+- Detalla tipos de notificaciones
+- Explica procesos adjudicativos vs ministeriales
+- Menciona municipios autónomos y jurisdicciones
+- Máximo 400 palabras
+
+RESPUESTA ESPECIALIZADA:"""
+
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "Especialista en procedimientos administrativos de Puerto Rico."},
+                    {"role": "user", "content": prompt_especializado}
+                ],
+                temperature=0.1,
+                max_tokens=800
+            )
+            
+            respuesta = response.choices[0].message.content.strip()
+            return f"⚖️ **ESPECIALISTA EN PROCEDIMIENTOS ADMINISTRATIVOS:**\n\n{respuesta}\n\n---\n📝 *Especialista en trámites y procedimientos*"
+            
+        except Exception as e:
+            print(f"Error en mini-especialista procedimientos: {e}")
+            return None
+
 class MiniEspecialistaTablas:
     """UN SOLO especialista para TODAS las tablas (cabida, calificaciones, permisos, agencias, menú)"""
     
@@ -367,6 +488,89 @@ def procesar_con_mini_especialistas(entrada):
             }
     
     # 3. Si no es caso específico, usar sistema actual
+    print("🔄 Usando sistema actual (no requiere especialización)")
+    return {
+        'usar_especialista': False,
+        'mensaje': 'Continuar con sistema actual'
+    }
+
+def procesar_con_mini_especialistas_v2(entrada):
+    """
+    Función NUEVA con 4 especialistas expandidos
+    """
+    print(f"🔍 Verificando mini-especialistas V2 para: '{entrada[:50]}...'")
+    
+    # 1. Verificar PERMISOS Y TRÁMITES (Tomos 1 y 3) - MUY FRECUENTE
+    if MiniEspecialistaPermisos.es_mi_consulta(entrada):
+        print("🏗️ Usando mini-especialista: Permisos y Trámites")
+        
+        try:
+            # Cargar Tomo 1 y Tomo 3
+            with open('data/tomo_1.txt', 'r', encoding='utf-8') as f:
+                tomo_1_contenido = f.read()
+            with open('data/tomo_3.txt', 'r', encoding='utf-8') as f:
+                tomo_3_contenido = f.read()
+                
+            resultado = MiniEspecialistaPermisos.procesar(entrada, tomo_1_contenido, tomo_3_contenido)
+            if resultado:
+                return {
+                    'usar_especialista': True,
+                    'respuesta': resultado,
+                    'tipo': 'mini-especialista-permisos'
+                }
+        except Exception as e:
+            print(f"Error cargando Tomos 1 y 3: {e}")
+    
+    # 2. Verificar PROCEDIMIENTOS ADMINISTRATIVOS (Tomo 2) - FRECUENTE
+    if MiniEspecialistaProcedimientos.es_mi_consulta(entrada):
+        print("⚖️ Usando mini-especialista: Procedimientos Administrativos")
+        
+        try:
+            # Cargar Tomo 2
+            with open('data/tomo_2.txt', 'r', encoding='utf-8') as f:
+                tomo_2_contenido = f.read()
+                
+            resultado = MiniEspecialistaProcedimientos.procesar(entrada, tomo_2_contenido)
+            if resultado:
+                return {
+                    'usar_especialista': True,
+                    'respuesta': resultado,
+                    'tipo': 'mini-especialista-procedimientos'
+                }
+        except Exception as e:
+            print(f"Error cargando Tomo 2: {e}")
+    
+    # 3. Verificar conservación histórica (Tomo 10) - ESPECÍFICO
+    if MiniEspecialistaConservacion.es_mi_consulta(entrada):
+        print("🏛️ Usando mini-especialista: Conservación Histórica")
+        
+        try:
+            with open("data/Tomo_10_Conservacion_Historica.txt", 'r', encoding='utf-8') as f:
+                tomo_10_contenido = f.read()
+            
+            resultado = MiniEspecialistaConservacion.procesar(entrada, tomo_10_contenido)
+            if resultado:
+                return {
+                    'usar_especialista': True,
+                    'respuesta': resultado,
+                    'tipo': 'mini-especialista-conservacion'
+                }
+        except Exception as e:
+            print(f"Error cargando Tomo 10: {e}")
+    
+    # 4. Verificar CUALQUIER tabla (unificado)
+    if MiniEspecialistaTablas.es_mi_consulta(entrada):
+        print("📊 Usando mini-especialista: Tablas Unificado")
+        
+        resultado = MiniEspecialistaTablas.procesar(entrada)
+        if resultado:
+            return {
+                'usar_especialista': True,
+                'respuesta': resultado,
+                'tipo': 'mini-especialista-tablas'
+            }
+    
+    # 5. Si no es caso específico, usar sistema actual
     print("🔄 Usando sistema actual (no requiere especialización)")
     return {
         'usar_especialista': False,

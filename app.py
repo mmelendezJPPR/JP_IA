@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 # 🆕 IMPORTAR MINI-ESPECIALISTAS
-from mini_especialistas import procesar_con_mini_especialistas
+from mini_especialistas import procesar_con_mini_especialistas_v2
 
 # CONFIGURACIÓN BETA - FECHA DE EXPIRACIÓN
 # Beta profesional por días para demostración oficial
@@ -2014,7 +2014,7 @@ def chat():
 
         # --- PRIORIDAD 0: Mini-Especialistas para casos ultra-específicos ---
         print("🔍 Verificando mini-especialistas...")
-        resultado_especialista = procesar_con_mini_especialistas(mensaje)
+        resultado_especialista = procesar_con_mini_especialistas_v2(mensaje)
         
         if resultado_especialista.get('usar_especialista', False):
             print(f"✨ Mini-especialista activado: {resultado_especialista['tipo']}")
