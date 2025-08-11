@@ -3,12 +3,12 @@ ALTERNATIVA INTELIGENTE: Mini-Especialistas
 Solo para casos muy específicos que realmente lo necesitan
 """
 import re
-from openai import OpenAI
+import anthropic
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 class MiniEspecialistaConservacion:
     """Mini especialista SOLO para conservación histórica"""
@@ -48,8 +48,12 @@ INSTRUCCIONES:
 
 RESPUESTA ESPECIALIZADA:"""
 
-            response = client.chat.completions.create(
-                model="gpt-4o",
+            # Importar el adaptador de Claude
+            from utils.claude_adapter import claude_chat_completion
+            
+            # Usar el cliente Claude para procesar la consulta
+            response = claude_chat_completion(
+                client=client,
                 messages=[
                     {"role": "system", "content": "Especialista en patrimonio histórico de Puerto Rico."},
                     {"role": "user", "content": prompt_especifico}
@@ -110,8 +114,12 @@ INSTRUCCIONES ESPECÍFICAS:
 
 RESPUESTA ESPECIALIZADA:"""
 
-            response = client.chat.completions.create(
-                model="gpt-4o",
+            # Importar el adaptador de Claude
+            from utils.claude_adapter import claude_chat_completion
+            
+            # Usar el cliente Claude para procesar la consulta
+            response = claude_chat_completion(
+                client=client,
                 messages=[
                     {"role": "system", "content": "Especialista en permisos y trámites de desarrollo de Puerto Rico."},
                     {"role": "user", "content": prompt_especializado}
@@ -169,17 +177,21 @@ INSTRUCCIONES ESPECÍFICAS:
 
 RESPUESTA ESPECIALIZADA:"""
 
-            response = client.chat.completions.create(
-                model="gpt-4o",
+            # Obtener el cliente de Anthropic
+            client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+            
+            # Usar el cliente Claude para procesar la consulta
+            response = client.messages.create(
+                model="claude-3-haiku-20240307",
+                system="Especialista en procedimientos administrativos de Puerto Rico.",
                 messages=[
-                    {"role": "system", "content": "Especialista en procedimientos administrativos de Puerto Rico."},
                     {"role": "user", "content": prompt_especializado}
                 ],
                 temperature=0.1,
                 max_tokens=800
             )
             
-            respuesta = response.choices[0].message.content.strip()
+            respuesta = response.content[0].text.strip()
             return f"⚖️ **ESPECIALISTA EN PROCEDIMIENTOS ADMINISTRATIVOS:**\n\n{respuesta}\n\n---\n📝 *Especialista en trámites y procedimientos*"
             
         except Exception as e:
@@ -496,20 +508,29 @@ def procesar_con_mini_especialistas(entrada):
 
 def procesar_con_mini_especialistas_v2(entrada):
     """
-    Función NUEVA con 4 especialistas expandidos
+    Función NUEVA con 4 especialistas expandidos - MEJORADA PARA USAR TOMOS ACTUALIZADOS
     """
     print(f"🔍 Verificando mini-especialistas V2 para: '{entrada[:50]}...'")
+    
+    # Importar función de carga de tomos (si no está disponible en este contexto)
+    from utils.cargador_tomos import cargar_tomo_mejorado
     
     # 1. Verificar PERMISOS Y TRÁMITES (Tomos 1 y 3) - MUY FRECUENTE
     if MiniEspecialistaPermisos.es_mi_consulta(entrada):
         print("🏗️ Usando mini-especialista: Permisos y Trámites")
         
         try:
-            # Cargar Tomo 1 y Tomo 3
-            with open('data/tomo_1.txt', 'r', encoding='utf-8') as f:
-                tomo_1_contenido = f.read()
-            with open('data/tomo_3.txt', 'r', encoding='utf-8') as f:
-                tomo_3_contenido = f.read()
+            # Cargar Tomo 1 y Tomo 3 mejorados
+            tomo_1_contenido = cargar_tomo_mejorado(1)
+            tomo_3_contenido = cargar_tomo_mejorado(3)
+            
+            # Verificar que ambos tomos se cargaron correctamente
+            if not tomo_1_contenido or not tomo_3_contenido:
+                print("❌ Fallo al cargar tomos 1 o 3 mejorados")
+                return {
+                    'usar_especialista': False,
+                    'mensaje': 'Error cargando tomos mejorados'
+                }
                 
             resultado = MiniEspecialistaPermisos.procesar(entrada, tomo_1_contenido, tomo_3_contenido)
             if resultado:
@@ -519,16 +540,23 @@ def procesar_con_mini_especialistas_v2(entrada):
                     'tipo': 'mini-especialista-permisos'
                 }
         except Exception as e:
-            print(f"Error cargando Tomos 1 y 3: {e}")
+            print(f"Error cargando Tomos 1 y 3 mejorados: {e}")
     
     # 2. Verificar PROCEDIMIENTOS ADMINISTRATIVOS (Tomo 2) - FRECUENTE
     if MiniEspecialistaProcedimientos.es_mi_consulta(entrada):
         print("⚖️ Usando mini-especialista: Procedimientos Administrativos")
         
         try:
-            # Cargar Tomo 2
-            with open('data/tomo_2.txt', 'r', encoding='utf-8') as f:
-                tomo_2_contenido = f.read()
+            # Cargar Tomo 2 mejorado
+            tomo_2_contenido = cargar_tomo_mejorado(2)
+            
+            # Verificar que el tomo se cargó correctamente
+            if not tomo_2_contenido:
+                print("❌ Fallo al cargar tomo 2 mejorado")
+                return {
+                    'usar_especialista': False,
+                    'mensaje': 'Error cargando tomo mejorado'
+                }
                 
             resultado = MiniEspecialistaProcedimientos.procesar(entrada, tomo_2_contenido)
             if resultado:
@@ -538,15 +566,28 @@ def procesar_con_mini_especialistas_v2(entrada):
                     'tipo': 'mini-especialista-procedimientos'
                 }
         except Exception as e:
-            print(f"Error cargando Tomo 2: {e}")
+            print(f"Error cargando Tomo 2 mejorado: {e}")
     
     # 3. Verificar conservación histórica (Tomo 10) - ESPECÍFICO
     if MiniEspecialistaConservacion.es_mi_consulta(entrada):
         print("🏛️ Usando mini-especialista: Conservación Histórica")
         
         try:
-            with open("data/Tomo_10_Conservacion_Historica.txt", 'r', encoding='utf-8') as f:
-                tomo_10_contenido = f.read()
+            # Cargar Tomo 10 mejorado
+            tomo_10_contenido = cargar_tomo_mejorado(10)
+            
+            # Verificar que el tomo se cargó correctamente
+            if not tomo_10_contenido:
+                # Intentar cargar la versión específica de conservación histórica
+                try:
+                    with open("data/Tomo_10_Conservacion_Historica.txt", 'r', encoding='utf-8') as f:
+                        tomo_10_contenido = f.read()
+                except Exception as e:
+                    print(f"Error cargando Tomo_10_Conservacion_Historica.txt: {e}")
+                    return {
+                        'usar_especialista': False,
+                        'mensaje': 'Error cargando tomo mejorado'
+                    }
             
             resultado = MiniEspecialistaConservacion.procesar(entrada, tomo_10_contenido)
             if resultado:
@@ -556,7 +597,7 @@ def procesar_con_mini_especialistas_v2(entrada):
                     'tipo': 'mini-especialista-conservacion'
                 }
         except Exception as e:
-            print(f"Error cargando Tomo 10: {e}")
+            print(f"Error cargando Tomo 10 mejorado: {e}")
     
     # 4. Verificar CUALQUIER tabla (unificado)
     if MiniEspecialistaTablas.es_mi_consulta(entrada):

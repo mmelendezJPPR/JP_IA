@@ -23,7 +23,7 @@ import json
 import mimetypes
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from openai import OpenAI
+import anthropic
 
 # 🆕 IMPORTAR MINI-ESPECIALISTAS
 from mini_especialistas import procesar_con_mini_especialistas_v2
@@ -84,7 +84,15 @@ os.chdir(script_dir)
 
 # Cargar variables de entorno y cliente
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+# Comprobación de API key
+if not os.getenv("ANTHROPIC_API_KEY"):
+    print("⚠️ ADVERTENCIA: No se ha configurado ANTHROPIC_API_KEY en el archivo .env")
+    print("Por favor, configure su API key de Anthropic para usar la aplicación")
+
+# Importar el cargador de tomos mejorados
+from utils.cargador_tomos import cargar_tomo_mejorado, cargar_todos_los_tomos
 
 # Lista de palabras clave legales para detección
 palabras_legales = [
@@ -94,14 +102,21 @@ palabras_legales = [
     'conservación', 'histórico', 'querella', 'edificabilidad', 'lotificación'
 ]
 
-# Función para cargar glosario (si existe)
+# Función para cargar glosario (primero busca versión mejorada)
 def cargar_glosario():
+    # Intentar cargar el glosario mejorado (Tomo 12)
+    glosario_mejorado = cargar_tomo_mejorado(12)
+    if glosario_mejorado:
+        print(f"✅ Glosario mejorado cargado: {len(glosario_mejorado)} caracteres, {len(glosario_mejorado.split('**'))} términos aprox.")
+        return glosario_mejorado
+    
+    # Si no se encuentra el mejorado, buscar el original
     ruta_glosario = os.path.join("data", "glosario.txt")
     if os.path.exists(ruta_glosario):
         try:
             with open(ruta_glosario, "r", encoding="utf-8") as f:
                 contenido = f.read()
-            print(f"✅ Glosario cargado: {len(contenido)} caracteres, {len(contenido.split('**'))} términos aprox.")
+            print(f"✅ Glosario original cargado: {len(contenido)} caracteres, {len(contenido.split('**'))} términos aprox.")
             return contenido
         except Exception as e:
             print(f"❌ Error cargando glosario: {e}")
@@ -110,7 +125,11 @@ def cargar_glosario():
         print(f"⚠️ Glosario no encontrado en: {ruta_glosario}")
         return ""
 
+# Cargar glosario (preferiblemente la versión mejorada)
 glosario = cargar_glosario()
+
+# Cargar todos los tomos mejorados
+tomos_mejorados = cargar_todos_los_tomos()
 
 # Función para obtener información completa de todos los tomos
 def obtener_titulos_tomos():
@@ -201,17 +220,17 @@ CAPACIDADES ESPECIALES:
 - Puedes hacer resúmenes y síntesis
 - Puedes explicar procedimientos y procesos
 - Puedes identificar relaciones entre diferentes regulaciones
-- TIENES ACCESO COMPLETO AL GLOSARIO DE TÉRMINOS LEGALES (Tomo 12)
-- 🏛️ **ESPECIALIZACIÓN EN SITIOS HISTÓRICOS**: Acceso completo al Tomo 10 con secciones específicas (10.1.1.1, 10.1.1.2, 10.1.4)
+- TIENES ACCESO COMPLETO AL GLOSARIO DE TÉRMINOS LEGALES (Tomo 12 mejorado)
+- 🏛️ **ESPECIALIZACIÓN EN SITIOS HISTÓRICOS**: Acceso completo al Tomo 10 mejorado
 
 ⚠️ **INFORMACIÓN CRÍTICA SOBRE TU BASE DE DATOS:**
 🚨 **FUENTE PRINCIPAL Y VIGENTE:** Reglamento de Emergencia JP-RP-41 (ACTUALIZADO - 2025)
-📚 **FUENTE COMPLEMENTARIA:** Glosario oficial de términos especializados
-📖 **SOLO PARA REFERENCIA HISTÓRICA:** 11 tomos de regulaciones anteriores (DEROGADOS)
+📚 **FUENTE COMPLEMENTARIA:** Glosario oficial de términos especializados (TOMO 12 COMPLETO Y MEJORADO)
+📖 **TOMOS COMPLETOS Y MEJORADOS (1-11)**: Versiones definitivas con información completa y alta calidad
 
 **🔴 REGLA ABSOLUTA: SIEMPRE menciona que la información legal vigente proviene del Reglamento de Emergencia JP-RP-41**
 
-ESTRUCTURA DE REFERENCIA HISTÓRICA (solo para contexto, NO para información vigente):
+ESTRUCTURA DE REFERENCIA HISTÓRICA (VERSIONES DEFINITIVAS MEJORADAS):
 - Tomo 1: Sistema de Evaluación y Tramitación de Permisos para el Desarrollo  
 - Tomo 2: Disposiciones Generales
 - Tomo 3: Permisos para Desarrollo y Negocios
@@ -221,18 +240,18 @@ ESTRUCTURA DE REFERENCIA HISTÓRICA (solo para contexto, NO para información vi
 - Tomo 7: Procesos
 - Tomo 8: Edificabilidad
 - Tomo 9: Infraestructura y Ambiente
-- Tomo 10: Conservación Histórica (INFORMACIÓN COMPLETA DISPONIBLE - Secciones 10.1.1.1, 10.1.1.2, 10.1.4)
+- Tomo 10: Conservación Histórica
 - Tomo 11: Querellas
-- Glosario de términos especializados (Tomo 12) - COMPLETAMENTE DISPONIBLE
+- Tomo 12: Glosario de términos especializados completo
 - 🚨 **Reglamento de Emergencia JP-RP-41 (VIGENTE Y ACTUALIZADO - 2025)** - FUENTE PRINCIPAL
 
-GLOSARIO DISPONIBLE:
-- Contiene definiciones oficiales de todos los términos legales
-- Puedes buscar y explicar cualquier término técnico
-- Siempre consulta el glosario para preguntas sobre definiciones
-- El glosario incluye categorías como: términos de planificación, términos especializados, etc.
+GLOSARIO MEJORADO DISPONIBLE (TOMO 12):
+- Contiene definiciones oficiales completas y actualizadas de todos los términos legales
+- Estructura optimizada para búsqueda y consulta rápida
+- Incluye términos especializados con definiciones técnicas precisas
+- Mayor cobertura de términos legales y técnicos relacionados con planificación
 
-**🚨 MENSAJE DE BIENVENIDA:** Siempre menciona que trabajas con el Reglamento de Emergencia JP-RP-41 como fuente principal y vigente."""}
+**🚨 MENSAJE DE BIENVENIDA:** Siempre menciona que trabajas con el Reglamento de Emergencia JP-RP-41 como fuente principal y vigente, y que ahora cuentas con versiones MEJORADAS Y ACTUALIZADAS de todos los tomos para ofrecer información más precisa."""}
         ]
 
 def buscar_en_glosario(termino):
@@ -591,7 +610,8 @@ def texto_a_tabla_html(texto):
 
 def buscar_tabla_cabida(tomo=None):
     """Busca tablas de cabida por tomo y las convierte a HTML si es posible
-    REFORZADO: Garantiza devolver siempre una respuesta clara"""
+    REFORZADO: Garantiza devolver siempre una respuesta clara
+    MEJORADO: Utiliza los tomos mejorados como fuente primaria"""
     resultados = []
     
     # Función auxiliar para crear tabla de cabida ficticia cuando no exista
@@ -615,6 +635,48 @@ Es importante tener en cuenta que estos valores pueden variar según la normativ
         # Log para depuración
         print(f"⚠️ Buscando tabla de cabida para tomo {tomo_num}...")
         
+        # 1. PRIMERO: Intentar extraer tabla del tomo mejorado
+        if tomo_num in tomos_mejorados:
+            print(f"📄 Buscando tablas en tomo {tomo_num} mejorado...")
+            contenido_tomo = tomos_mejorados[tomo_num]
+            
+            # Buscar secciones con tablas en el contenido del tomo mejorado
+            # Patrones para identificar tablas en el texto
+            patrones_tabla = [
+                r"(?i)tabla\s+de\s+cabida.*?\|.*?\|.*?\|",
+                r"\|\s*distrito\s*\|.*?\|.*?\|",
+                r"\|\s*cabida.*?\|.*?\|",
+                r"\|\s*calificación\s*\|.*?\|.*?\|"
+            ]
+            
+            for patron in patrones_tabla:
+                match = re.search(patron, contenido_tomo, re.DOTALL)
+                if match:
+                    # Extraer la sección de texto que contiene la tabla
+                    inicio = max(0, match.start() - 200)  # Incluir algo de contexto
+                    fin = min(len(contenido_tomo), match.end() + 1000)  # Capturar toda la tabla
+                    seccion_tabla = contenido_tomo[inicio:fin]
+                    
+                    # Extraer solo las líneas que contienen '|' para la tabla
+                    lineas = seccion_tabla.split('\n')
+                    lineas_tabla = []
+                    en_tabla = False
+                    
+                    for linea in lineas:
+                        if '|' in linea:
+                            en_tabla = True
+                            lineas_tabla.append(linea)
+                        elif en_tabla and linea.strip() == '':
+                            # Fin de la tabla
+                            if len(lineas_tabla) > 3:  # Al menos encabezado + separador + contenido
+                                break
+                    
+                    if lineas_tabla:
+                        tabla_extraida = '\n'.join(lineas_tabla)
+                        print(f"✅ Tabla extraída del tomo {tomo_num} mejorado")
+                        return tabla_extraida
+        
+        # 2. SEGUNDO: Buscar en archivos específicos de tabla
         ruta_directa = os.path.join("data", "RespuestasParaChatBot", f"RespuestasIA_Tomo{tomo_num}", f"TablaCabida_Tomo_{tomo_num}.txt")
         ruta_subcarpeta = os.path.join("data", "RespuestasParaChatBot", f"RespuestasIA_Tomo{tomo_num}", "Tablas", f"TablaCabida_Tomo_{tomo_num}.txt")
         
@@ -932,9 +994,12 @@ INSTRUCCIONES ESPECÍFICAS PARA SITIOS HISTÓRICOS:
 
 RESPUESTA ESPECIALIZADA EN SITIOS HISTÓRICOS:"""
         
-        # Usar el cliente OpenAI para procesar la consulta
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        # Importar adaptador de Claude
+        from utils.claude_adapter import claude_chat_completion
+        
+        # Usar el cliente Claude para procesar la consulta
+        response = claude_chat_completion(
+            client=client,
             messages=[
                 {"role": "system", "content": "Eres Agente de Planificación, experto en conservación histórica de Puerto Rico. Proporciona respuestas precisas basadas en el Reglamento de Emergencia JP-RP-41, siempre mencionando secciones específicas. NO menciones 'Tomo 10' ni 'Reglamento Conjunto 2020'."},
                 {"role": "user", "content": prompt}
@@ -1009,9 +1074,12 @@ INSTRUCCIONES ESPECÍFICAS:
 
 RESPUESTA BASADA EN REGLAMENTO DE EMERGENCIA:"""
         
-        # Usar el cliente OpenAI para procesar la consulta
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        # Importar adaptador de Claude si no está importado
+        from utils.claude_adapter import claude_chat_completion
+        
+        # Usar el cliente Claude para procesar la consulta
+        response = claude_chat_completion(
+            client=client,
             messages=[
                 {"role": "system", "content": "Eres Agente de planificación, experto en reglamentos de emergencia de Puerto Rico. Proporciona respuestas CONCISAS y DIRECTAS, evitando información redundante."},
                 {"role": "user", "content": prompt}
@@ -1232,18 +1300,18 @@ INSTRUCCIONES PARA RESPUESTA INTELIGENTE:
 
 RESPUESTA INTELIGENTE:"""
         
-        # Generar respuesta con IA
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        # Generar respuesta con IA de Claude
+        response = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            system="Eres Agente de Planificación, un experto en leyes de planificación de Puerto Rico. Proporciona respuestas inteligentes, claras y útiles basadas en la información oficial disponible.",
+            max_tokens=1000,
             messages=[
-                {"role": "system", "content": "Eres Agente de Planificación, un experto en leyes de planificación de Puerto Rico. Proporciona respuestas inteligentes, claras y útiles basadas en la información oficial disponible."},
                 {"role": "user", "content": prompt_inteligente}
             ],
-            temperature=0.3,  # Un poco más creativo que antes
-            max_tokens=1000   # Más espacio para respuestas detalladas
+            temperature=0.3  # Un poco más creativo que antes
         )
         
-        contenido_respuesta = response.choices[0].message.content.strip()
+        contenido_respuesta = response.content[0].text
         
         if contenido_respuesta and len(contenido_respuesta) > 50:
             # Agregar fuente y meta-información
@@ -1656,17 +1724,17 @@ INSTRUCCIONES:
 
 INFORMACIÓN RELEVANTE EXTRAÍDA:"""
         
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            system=f"Eres un especialista en extraer información relevante de documentos legales. Enfócate en la precisión y relevancia.",
             messages=[
-                {"role": "system", "content": f"Eres un especialista en extraer información relevante de documentos legales. Enfócate en la precisión y relevancia."},
                 {"role": "user", "content": prompt_extraccion}
             ],
             temperature=0.1,
             max_tokens=800
         )
         
-        contenido_extraido = response.choices[0].message.content.strip()
+        contenido_extraido = response.content[0].text.strip()
         
         if contenido_extraido and contenido_extraido != "NO_RELEVANTE" and len(contenido_extraido) > 50:
             return contenido_extraido
@@ -1712,17 +1780,17 @@ INSTRUCCIONES PARA RESPUESTA INTELIGENTE:
 
 RESPUESTA ESPECIALIZADA:"""
         
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            system="Eres Agente de Planificación, un experto en leyes de planificación de Puerto Rico con estilo conversacional inteligente como ChatGPT. Proporciona respuestas expertas, claras y útiles.",
             messages=[
-                {"role": "system", "content": "Eres Agente de Planificación, un experto en leyes de planificación de Puerto Rico con estilo conversacional inteligente como ChatGPT. Proporciona respuestas expertas, claras y útiles."},
                 {"role": "user", "content": prompt_hibrido}
             ],
             temperature=0.4,  # Un poco más creativo para respuestas conversacionales
             max_tokens=1500   # Más espacio para respuestas completas
         )
         
-        respuesta_final = response.choices[0].message.content.strip()
+        respuesta_final = response.content[0].text.strip()
         
         if respuesta_final and len(respuesta_final) > 50:
             # Agregar información sobre las fuentes utilizadas
@@ -1769,17 +1837,17 @@ INSTRUCCIONES:
 
 RESPUESTA ORIENTADORA:"""
         
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            system="Eres Agente de Planificación. Cuando no tienes información específica, proporciona orientación útil y profesional.",
             messages=[
-                {"role": "system", "content": "Eres Agente de Planificación. Cuando no tienes información específica, proporciona orientación útil y profesional."},
                 {"role": "user", "content": prompt_generico}
             ],
             temperature=0.3,
             max_tokens=600
         )
         
-        respuesta = response.choices[0].message.content.strip()
+        respuesta = response.content[0].text.strip()
         
         if respuesta and len(respuesta) > 50:
             respuesta += "\n\n---\n💡 *Para obtener información más específica, puedes contactar directamente con la Junta de Planificación de Puerto Rico*"
@@ -1824,16 +1892,16 @@ INSTRUCCIONES:
 
 RESPUESTA:"""
         
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            system=f"Eres Agente de planificación. Presenta {tipo_recurso.lower()}s de forma CONCISA.",
             messages=[
-                {"role": "system", "content": f"Eres Agente de planificación. Presenta {tipo_recurso.lower()}s de forma CONCISA."},
                 {"role": "user", "content": prompt_especializado}
             ],
             temperature=0.1,
             max_tokens=700  # Limitar tokens
         )
-        contenido = response.choices[0].message.content.strip()
+        contenido = response.content[0].text.strip()
 
         if contenido and len(contenido) > 50:
             nombre_archivo = os.path.basename(ruta_recurso)
@@ -1947,8 +2015,6 @@ def chat():
     """Endpoint para procesar mensajes del chat con IA híbrida inteligente
     REFORZADO: Mejorado para priorizar las consultas específicas sobre tablas de cabida"""
     try:
-    # ...existing code...
-            
         data = request.get_json()
         mensaje = data.get('message', '').strip()
         
@@ -2084,9 +2150,12 @@ Si la pregunta está relacionada con planificación, permisos, construcción o t
             else:
                 mensajes_conversacion.append({"role": "user", "content": mensaje})
             
-            # Generar respuesta con IA más inteligente
-            respuesta_openai = client.chat.completions.create(
-                model="gpt-4o",
+            # Generar respuesta con Claude (Anthropic)
+            from utils.claude_adapter import claude_chat_completion
+            
+            # Usar el cliente Claude para procesar la consulta
+            respuesta_openai = claude_chat_completion(
+                client=client,
                 messages=mensajes_conversacion,
                 temperature=0.3,  # Un poco más creativo para conversaciones generales
                 max_tokens=800
@@ -2114,6 +2183,34 @@ Si la pregunta está relacionada con planificación, permisos, construcción o t
         print(f"Error en chat: {str(e)}")
         import traceback
         traceback.print_exc()
+        
+        # Verificar si el error es por cuota excedida de API
+        error_str = str(e).lower()
+        if any(term in error_str for term in ["quota", "rate limit", "exceeded", "limit exceeded"]):
+            print("⚠️ DETECTADO ERROR DE CUOTA EXCEDIDA EN API")
+            
+            # Guardar error en log para diagnóstico
+            with open("error_api_log.txt", "a", encoding="utf-8") as error_file:
+                error_file.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error de cuota excedida: {str(e)}\n")
+                error_file.write("Por favor, revisa tu plan de Anthropic para resolver el problema de cuota\n\n")
+            
+            # Respuesta para el usuario
+            respuesta = """⚠️ **Límite de cuota de API excedido**
+
+Lo sentimos, hemos alcanzado nuestro límite de uso de la API de Anthropic. 
+
+Por favor:
+1. Inténtelo de nuevo más tarde 
+2. Contacte con el administrador del sistema para resolver el problema
+
+Estamos trabajando para resolver esta situación lo antes posible.
+"""
+            
+            return jsonify({
+                'response': respuesta,
+                'type': 'error-api',
+                'conversation_id': conversation_id
+            })
         
         # Guardar error en log para diagnóstico
         with open("error_log.txt", "a", encoding="utf-8") as error_file:
@@ -2160,7 +2257,11 @@ def nueva_conversacion():
 @app.route('/health')
 def health():
     """Endpoint de salud para verificar que la aplicación está funcionando"""
-    return jsonify({'status': 'ok', 'service': 'Agente de planificación Web'})
+    return jsonify({
+        'status': 'ok', 
+        'service': 'Agente de planificación Web',
+        'api': 'anthropic'
+    })
 
 @app.route('/favicon.ico')
 def favicon():

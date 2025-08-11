@@ -18,6 +18,7 @@ Agente de planificacion es un asistente de inteligencia artificial especializado
 
 - **Backend**: Python Flask
 - **Frontend**: HTML5, CSS3, JavaScript
+- **IA**: API de Anthropic Claude
 - **IA**: OpenAI GPT
 - **Deployment**: Railway compatible
 
