@@ -1,5 +1,28 @@
 """
-Utilidades para integración de la API de Claude (Anthropic) en JP_IA
+Utilidades para integración     # Construir mensajes en el formato de Anthropic
+    claude_messages = []
+    
+    # Si hay un mensaje de sistema, agregarlo como el primer mensaje del usuario con formato especial
+    if system_message:
+        # El mensaje del sistema se convierte en una instrucción especial
+        claude_messages.append({"role": "user", "content": f"{system_message}"})
+        if len(human_messages) > 0:
+            # Primer mensaje del usuario después de la instrucción
+            claude_messages.append({"role": "assistant", "content": "Entendido, seguiré esas instrucciones."})
+    
+    # Añadir los mensajes de la conversación
+    for i in range(max(len(human_messages), len(assistant_messages))):
+        if i < len(human_messages):
+            # Si es el primer mensaje y no hay sistema, o es cualquier otro mensaje
+            if i > 0 or not system_message:
+                claude_messages.append({"role": "user", "content": human_messages[i]})
+        if i < len(assistant_messages):
+            claude_messages.append({"role": "assistant", "content": assistant_messages[i]})
+    
+    # Último mensaje del usuario para solicitar respuesta (si no está ya incluido)
+    if len(claude_messages) == 0 or claude_messages[-1]["role"] != "user":
+        if len(human_messages) > 0:
+            claude_messages.append({"role": "user", "content": human_messages[-1]})ude (Anthropic) en JP_IA
 """
 
 import anthropic
@@ -49,14 +72,12 @@ def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, m
     prompt += "Assistant: "
     
     try:
-        # Llamar a la API de Claude
+        # Llamar a la API de Claude con el formato correcto de mensajes
         response = client.messages.create(
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+            messages=claude_messages
         )
         
         # Convertir la respuesta de Claude al formato similar a OpenAI
@@ -77,9 +98,7 @@ def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, m
                 model="claude-3-haiku-20240307",
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=claude_messages
             )
             
             # Convertir la respuesta de Claude al formato similar a OpenAI
