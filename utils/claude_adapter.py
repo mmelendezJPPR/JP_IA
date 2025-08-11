@@ -1,33 +1,10 @@
 """
-Utilidades para integración     # Construir mensajes en el formato de Anthropic
-    claude_messages = []
-    
-    # Si hay un mensaje de sistema, agregarlo como el primer mensaje del usuario con formato especial
-    if system_message:
-        # El mensaje del sistema se convierte en una instrucción especial
-        claude_messages.append({"role": "user", "content": f"{system_message}"})
-        if len(human_messages) > 0:
-            # Primer mensaje del usuario después de la instrucción
-            claude_messages.append({"role": "assistant", "content": "Entendido, seguiré esas instrucciones."})
-    
-    # Añadir los mensajes de la conversación
-    for i in range(max(len(human_messages), len(assistant_messages))):
-        if i < len(human_messages):
-            # Si es el primer mensaje y no hay sistema, o es cualquier otro mensaje
-            if i > 0 or not system_message:
-                claude_messages.append({"role": "user", "content": human_messages[i]})
-        if i < len(assistant_messages):
-            claude_messages.append({"role": "assistant", "content": assistant_messages[i]})
-    
-    # Último mensaje del usuario para solicitar respuesta (si no está ya incluido)
-    if len(claude_messages) == 0 or claude_messages[-1]["role"] != "user":
-        if len(human_messages) > 0:
-            claude_messages.append({"role": "user", "content": human_messages[-1]})ude (Anthropic) en JP_IA
+Utilidades para integración de la API de Claude (Anthropic) en JP_IA
 """
 
 import anthropic
 
-def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, model="claude-3-opus-20240229"):
+def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, model="claude-3-sonnet-20240229"):
     """
     Wrapper para la API de Claude que convierte el formato OpenAI al formato Claude
     
@@ -36,7 +13,7 @@ def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, m
         messages: Lista de mensajes en formato OpenAI
         temperature: Temperatura para la generación (default: 0.3)
         max_tokens: Máximo de tokens para la respuesta (default: 1000)
-        model: Modelo de Claude a usar (default: claude-3-opus-20240229)
+        model: Modelo de Claude a usar (default: claude-3-sonnet-20240229)
         
     Returns:
         Un objeto de respuesta compatible con el formato OpenAI
@@ -54,31 +31,39 @@ def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, m
         elif msg["role"] == "assistant":
             assistant_messages.append(msg["content"])
     
-    # Construir el prompt para Claude
-    prompt = ""
+    # Construir mensajes en el formato de Anthropic
+    anthropic_messages = []
     
-    # Añadir mensaje del sistema al principio si existe
-    if system_message:
-        prompt += f"\n\nHuman: <system>{system_message}</system>\n\n"
+    # Si hay un mensaje de sistema, usarlo como system prompt
+    system_prompt = system_message if system_message else None
     
-    # Añadir los mensajes alternando entre Human y Assistant
+    # Añadir los mensajes alternando entre usuario y asistente
     for i in range(max(len(human_messages), len(assistant_messages))):
         if i < len(human_messages):
-            prompt += f"Human: {human_messages[i]}\n\n"
+            anthropic_messages.append({"role": "user", "content": human_messages[i]})
         if i < len(assistant_messages):
-            prompt += f"Assistant: {assistant_messages[i]}\n\n"
+            anthropic_messages.append({"role": "assistant", "content": assistant_messages[i]})
     
-    # Añadir "Assistant: " al final para que Claude continúe
-    prompt += "Assistant: "
+    # Si no hay mensajes o el último no es del usuario, añadir el último mensaje del usuario
+    if not anthropic_messages or (anthropic_messages and anthropic_messages[-1]["role"] != "user"):
+        if human_messages:
+            anthropic_messages.append({"role": "user", "content": human_messages[-1]})
     
     try:
-        # Llamar a la API de Claude con el formato correcto de mensajes
-        response = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            messages=claude_messages
-        )
+        # Preparar los parámetros para la llamada a la API
+        params = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "messages": anthropic_messages
+        }
+        
+        # Añadir system si está definido
+        if system_prompt:
+            params["system"] = system_prompt
+            
+        # Llamar a la API de Claude
+        response = client.messages.create(**params)
         
         # Convertir la respuesta de Claude al formato similar a OpenAI
         mock_openai_response = type('MockResponse', (), {})()
@@ -94,12 +79,9 @@ def claude_chat_completion(client, messages, temperature=0.3, max_tokens=1000, m
         # Registrar el error y reintentarlo con Claude Haiku (modelo más pequeño y económico)
         print(f"Error al llamar a Claude: {e}. Reintentando con Claude Haiku...")
         try:
-            response = client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=max_tokens,
-                temperature=temperature,
-                messages=claude_messages
-            )
+            # Cambiar al modelo más económico y mantener los mismos parámetros
+            params["model"] = "claude-3-haiku-20240307"
+            response = client.messages.create(**params)
             
             # Convertir la respuesta de Claude al formato similar a OpenAI
             mock_openai_response = type('MockResponse', (), {})()
