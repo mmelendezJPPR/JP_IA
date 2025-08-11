@@ -1903,53 +1903,17 @@ def index():
     """Página principal con verificación de beta"""
     from datetime import datetime
     
-<<<<<<< HEAD
     # Mostrar la aplicación directamente
     current_time = datetime.now().strftime('%H:%M')
     return render_template('index_v2.html', current_time=current_time)
-=======
-    # Verificar si la beta está activa
-    beta_activa, dias_restantes = verificar_beta_activa()
-    
-    if not beta_activa:
-        # Si la beta expiró, mostrar página de expiración
-        return render_template('beta_expirada.html', 
-                             fecha_expiracion=formatear_fecha_espanol(FECHA_EXPIRACION_BETA))
-    
-    # Si está activa, mostrar la aplicación con info de beta
-    current_time = datetime.now().strftime('%H:%M')
-    return render_template('index_v2.html', 
-                         current_time=current_time,
-                         es_beta=True,
-                         dias_restantes=dias_restantes,
-                         fecha_expiracion=formatear_fecha_espanol(FECHA_EXPIRACION_BETA),
-                         fecha_expiracion_iso=FECHA_EXPIRACION_BETA.isoformat())
->>>>>>> 2c40ab449e3e3cc72d86dddc803ce90216d4d24c
 
 @app.route('/v2')
 def index_v2():
     """Página principal V2 - Nueva interfaz (también con beta)"""
     from datetime import datetime
     
-<<<<<<< HEAD
     current_time = datetime.now().strftime('%H:%M')
     return render_template('index_v2.html', current_time=current_time)
-=======
-    # Verificar si la beta está activa
-    beta_activa, dias_restantes = verificar_beta_activa()
-    
-    if not beta_activa:
-        return render_template('beta_expirada.html', 
-                             fecha_expiracion=formatear_fecha_espanol(FECHA_EXPIRACION_BETA))
-    
-    current_time = datetime.now().strftime('%H:%M')
-    return render_template('index_v2.html', 
-                         current_time=current_time,
-                         es_beta=True,
-                         dias_restantes=dias_restantes,
-                         fecha_expiracion=formatear_fecha_espanol(FECHA_EXPIRACION_BETA),
-                         fecha_expiracion_iso=FECHA_EXPIRACION_BETA.isoformat())
->>>>>>> 2c40ab449e3e3cc72d86dddc803ce90216d4d24c
 
 @app.route('/test')
 def test():
@@ -1983,17 +1947,7 @@ def chat():
     """Endpoint para procesar mensajes del chat con IA híbrida inteligente
     REFORZADO: Mejorado para priorizar las consultas específicas sobre tablas de cabida"""
     try:
-<<<<<<< HEAD
     # ...existing code...
-=======
-        # Verificar si la beta está activa antes de procesar el chat
-        beta_activa, _ = verificar_beta_activa()
-        if not beta_activa:
-            return jsonify({
-                'error': 'La versión beta ha expirado',
-                'message': f'Esta versión beta expiró el {formatear_fecha_espanol(FECHA_EXPIRACION_BETA)}. Contacta al administrador para obtener la versión completa.'
-            }), 403
->>>>>>> 2c40ab449e3e3cc72d86dddc803ce90216d4d24c
             
         data = request.get_json()
         mensaje = data.get('message', '').strip()
